@@ -29,3 +29,48 @@
 2. Файл docker-compose.yml с установкой PostgreSQL и заполненными данными из файлов mock_data(*).csv.
 3. Скрипты DDL (SQL) создания таблиц фактов и измерений в соответствии с моделью снежинка/звезда.
 4. Скрипты DML (SQL) заполнения таблиц фактов и измерений из исходных данных.
+
+## Реализация в репозитории
+
+- [docker-compose.yml](./docker-compose.yml) поднимает PostgreSQL 16.
+- [sql/00_create_mock_data.sql](./sql/00_create_mock_data.sql) создаёт сырую таблицу `mock_data`.
+- [sql/01_load_mock_data.sql](./sql/01_load_mock_data.sql) загружает все 10 CSV-файлов в `mock_data`.
+- [sql/02_ddl_snowflake.sql](./sql/02_ddl_snowflake.sql) создаёт полную snowflake-модель и таблицу фактов.
+- [sql/03_dml_snowflake.sql](./sql/03_dml_snowflake.sql) заполняет полную snowflake-модель из `mock_data`.
+- [sql/04_validation_queries.sql](./sql/04_validation_queries.sql) содержит проверочные запросы по количеству загруженных записей на каждом уровне снежинки.
+
+## Что нормализовано
+
+Схема построена как полноценная снежинка:
+- география: `dim_country -> dim_state -> dim_city -> dim_address`;
+- индексы адресов: `dim_postal_code`;
+- питомцы клиентов: `dim_pet_category -> dim_pet_type -> dim_pet_breed -> dim_customer_pet`;
+- товарные атрибуты: `dim_product_category`, `dim_product_brand`, `dim_product_material`, `dim_product_color`, `dim_product_size`;
+- календарь: `dim_year -> dim_quarter -> dim_month -> dim_date`;
+- верхнеуровневые измерения: `dim_customer`, `dim_seller`, `dim_store`, `dim_supplier`, `dim_product`;
+- факт: `fact_sales`.
+
+## Как запустить
+
+```bash
+docker compose up -d
+```
+
+После первого запуска PostgreSQL автоматически:
+- создаст базу `bdsnowflake`;
+- загрузит 10000 строк в таблицу `mock_data`;
+- создаст таблицы измерений и фактов;
+- заполнит аналитическую модель.
+
+Подключение к БД:
+- host: `localhost`
+- port: `5432`
+- database: `bdsnowflake`
+- user: `postgres`
+- password: `postgres`
+
+Проверить результат можно так:
+
+```bash
+docker compose exec -T postgres psql -U postgres -d bdsnowflake -f /docker-entrypoint-initdb.d/04_validation_queries.sql
+```
