@@ -1,3 +1,7 @@
+-- ============================================================
+-- GEOGRAPHY HIERARCHY: country → state → city → address
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS dim_country (
     country_id BIGSERIAL PRIMARY KEY,
     country_name TEXT NOT NULL UNIQUE
@@ -32,6 +36,10 @@ CREATE TABLE IF NOT EXISTS dim_postal_code (
     country_id BIGINT NOT NULL REFERENCES dim_country(country_id)
 );
 
+-- ============================================================
+-- PET HIERARCHY: pet_category → pet_type → pet_breed
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS dim_pet_category (
     pet_category_id BIGSERIAL PRIMARY KEY,
     pet_category_name TEXT NOT NULL UNIQUE
@@ -45,7 +53,8 @@ CREATE TABLE IF NOT EXISTS dim_pet_type (
 
 CREATE TABLE IF NOT EXISTS dim_pet_breed (
     pet_breed_id BIGSERIAL PRIMARY KEY,
-    pet_breed_name TEXT NOT NULL UNIQUE
+    pet_breed_name TEXT NOT NULL UNIQUE,
+    pet_type_id BIGINT NOT NULL REFERENCES dim_pet_type(pet_type_id)
 );
 
 CREATE TABLE IF NOT EXISTS dim_customer_pet (
@@ -56,30 +65,73 @@ CREATE TABLE IF NOT EXISTS dim_customer_pet (
     pet_breed_id BIGINT NOT NULL REFERENCES dim_pet_breed(pet_breed_id)
 );
 
+-- ============================================================
+-- PRODUCT ATTRIBUTE HIERARCHIES (full snowflake normalization)
+-- ============================================================
+
+-- department → category
+CREATE TABLE IF NOT EXISTS dim_product_department (
+    department_id BIGSERIAL PRIMARY KEY,
+    department_name TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS dim_product_category (
     product_category_id BIGSERIAL PRIMARY KEY,
-    product_category_name TEXT NOT NULL UNIQUE
+    product_category_name TEXT NOT NULL UNIQUE,
+    department_id BIGINT NOT NULL REFERENCES dim_product_department(department_id)
+);
+
+-- brand_segment → brand
+CREATE TABLE IF NOT EXISTS dim_brand_segment (
+    brand_segment_id BIGSERIAL PRIMARY KEY,
+    segment_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_product_brand (
     brand_id BIGSERIAL PRIMARY KEY,
-    brand_name TEXT NOT NULL UNIQUE
+    brand_name TEXT NOT NULL UNIQUE,
+    brand_segment_id BIGINT NOT NULL REFERENCES dim_brand_segment(brand_segment_id)
+);
+
+-- material_type → material
+CREATE TABLE IF NOT EXISTS dim_material_type (
+    material_type_id BIGSERIAL PRIMARY KEY,
+    material_type_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_product_material (
     material_id BIGSERIAL PRIMARY KEY,
-    material_name TEXT NOT NULL UNIQUE
+    material_name TEXT NOT NULL UNIQUE,
+    material_type_id BIGINT NOT NULL REFERENCES dim_material_type(material_type_id)
+);
+
+-- color_group → color
+CREATE TABLE IF NOT EXISTS dim_color_group (
+    color_group_id BIGSERIAL PRIMARY KEY,
+    color_group_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_product_color (
     color_id BIGSERIAL PRIMARY KEY,
-    color_name TEXT NOT NULL UNIQUE
+    color_name TEXT NOT NULL UNIQUE,
+    color_group_id BIGINT NOT NULL REFERENCES dim_color_group(color_group_id)
+);
+
+-- size_category → size
+CREATE TABLE IF NOT EXISTS dim_size_category (
+    size_category_id BIGSERIAL PRIMARY KEY,
+    size_category_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_product_size (
     size_id BIGSERIAL PRIMARY KEY,
-    size_name TEXT NOT NULL UNIQUE
+    size_name TEXT NOT NULL UNIQUE,
+    size_category_id BIGINT NOT NULL REFERENCES dim_size_category(size_category_id)
 );
+
+-- ============================================================
+-- CALENDAR HIERARCHY: year → quarter → month → date
+-- ============================================================
 
 CREATE TABLE IF NOT EXISTS dim_year (
     year_id BIGSERIAL PRIMARY KEY,
@@ -107,6 +159,10 @@ CREATE TABLE IF NOT EXISTS dim_date (
     day_of_month INTEGER NOT NULL,
     month_id BIGINT NOT NULL REFERENCES dim_month(month_id)
 );
+
+-- ============================================================
+-- ENTITY DIMENSIONS
+-- ============================================================
 
 CREATE TABLE IF NOT EXISTS dim_supplier (
     supplier_id BIGSERIAL PRIMARY KEY,
@@ -165,6 +221,10 @@ CREATE TABLE IF NOT EXISTS dim_product (
     expiry_date_id INTEGER NOT NULL REFERENCES dim_date(date_id),
     supplier_id BIGINT NOT NULL REFERENCES dim_supplier(supplier_id)
 );
+
+-- ============================================================
+-- FACT TABLE
+-- ============================================================
 
 CREATE TABLE IF NOT EXISTS fact_sales (
     sale_id BIGSERIAL PRIMARY KEY,

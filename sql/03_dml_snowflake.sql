@@ -1,3 +1,7 @@
+-- ============================================================
+-- GEOGRAPHY HIERARCHY
+-- ============================================================
+
 INSERT INTO dim_country (country_name)
 SELECT DISTINCT country_name
 FROM (
@@ -88,6 +92,10 @@ JOIN dim_country c
 WHERE NULLIF(md.seller_postal_code, '') IS NOT NULL
 ON CONFLICT (postal_code_nk) DO NOTHING;
 
+-- ============================================================
+-- PET HIERARCHY: category → type → breed
+-- ============================================================
+
 INSERT INTO dim_pet_category (pet_category_name)
 SELECT DISTINCT pet_category_name
 FROM (
@@ -111,10 +119,15 @@ JOIN dim_pet_category pc
 WHERE md.customer_pet_type <> ''
 ON CONFLICT (pet_type_name) DO NOTHING;
 
-INSERT INTO dim_pet_breed (pet_breed_name)
-SELECT DISTINCT customer_pet_breed
-FROM mock_data
-WHERE customer_pet_breed <> ''
+-- pet_breed now links to pet_type (snowflake normalization)
+INSERT INTO dim_pet_breed (pet_breed_name, pet_type_id)
+SELECT DISTINCT
+    md.customer_pet_breed,
+    pt.pet_type_id
+FROM mock_data md
+JOIN dim_pet_type pt
+  ON pt.pet_type_name = md.customer_pet_type
+WHERE md.customer_pet_breed <> ''
 ON CONFLICT (pet_breed_name) DO NOTHING;
 
 INSERT INTO dim_customer_pet (customer_pet_nk, pet_name, pet_type_id, pet_breed_id)
@@ -130,35 +143,148 @@ JOIN dim_pet_breed pb
   ON pb.pet_breed_name = md.customer_pet_breed
 ON CONFLICT (customer_pet_nk) DO NOTHING;
 
-INSERT INTO dim_product_category (product_category_name)
-SELECT DISTINCT product_category
-FROM mock_data
-WHERE product_category <> ''
+-- ============================================================
+-- PRODUCT ATTRIBUTE HIERARCHIES
+-- ============================================================
+
+-- department → category
+INSERT INTO dim_product_department (department_name)
+VALUES
+    ('Equipment'),
+    ('Consumables'),
+    ('Entertainment')
+ON CONFLICT (department_name) DO NOTHING;
+
+INSERT INTO dim_product_category (product_category_name, department_id)
+SELECT DISTINCT
+    md.product_category,
+    d.department_id
+FROM mock_data md
+JOIN dim_product_department d
+  ON d.department_name = CASE md.product_category
+      WHEN 'Cage' THEN 'Equipment'
+      WHEN 'Food' THEN 'Consumables'
+      WHEN 'Toy'  THEN 'Entertainment'
+  END
+WHERE md.product_category <> ''
 ON CONFLICT (product_category_name) DO NOTHING;
 
-INSERT INTO dim_product_brand (brand_name)
-SELECT DISTINCT product_brand
-FROM mock_data
-WHERE product_brand <> ''
+-- brand_segment → brand
+INSERT INTO dim_brand_segment (segment_name)
+VALUES
+    ('A-F'),
+    ('G-L'),
+    ('M-R'),
+    ('S-Z')
+ON CONFLICT (segment_name) DO NOTHING;
+
+INSERT INTO dim_product_brand (brand_name, brand_segment_id)
+SELECT DISTINCT
+    md.product_brand,
+    seg.brand_segment_id
+FROM mock_data md
+JOIN dim_brand_segment seg
+  ON seg.segment_name = CASE
+      WHEN LEFT(UPPER(md.product_brand), 1) BETWEEN 'A' AND 'F' THEN 'A-F'
+      WHEN LEFT(UPPER(md.product_brand), 1) BETWEEN 'G' AND 'L' THEN 'G-L'
+      WHEN LEFT(UPPER(md.product_brand), 1) BETWEEN 'M' AND 'R' THEN 'M-R'
+      ELSE 'S-Z'
+  END
+WHERE md.product_brand <> ''
 ON CONFLICT (brand_name) DO NOTHING;
 
-INSERT INTO dim_product_material (material_name)
-SELECT DISTINCT product_material
-FROM mock_data
-WHERE product_material <> ''
+-- material_type → material
+INSERT INTO dim_material_type (material_type_name)
+VALUES
+    ('Metal'),
+    ('Natural'),
+    ('Synthetic')
+ON CONFLICT (material_type_name) DO NOTHING;
+
+INSERT INTO dim_product_material (material_name, material_type_id)
+SELECT DISTINCT
+    md.product_material,
+    mt.material_type_id
+FROM mock_data md
+JOIN dim_material_type mt
+  ON mt.material_type_name = CASE md.product_material
+      WHEN 'Aluminum'   THEN 'Metal'
+      WHEN 'Brass'      THEN 'Metal'
+      WHEN 'Steel'      THEN 'Metal'
+      WHEN 'Wood'       THEN 'Natural'
+      WHEN 'Stone'      THEN 'Natural'
+      WHEN 'Granite'    THEN 'Natural'
+      WHEN 'Glass'      THEN 'Natural'
+      WHEN 'Plastic'    THEN 'Synthetic'
+      WHEN 'Plexiglass' THEN 'Synthetic'
+      WHEN 'Rubber'     THEN 'Synthetic'
+      WHEN 'Vinyl'      THEN 'Synthetic'
+  END
+WHERE md.product_material <> ''
 ON CONFLICT (material_name) DO NOTHING;
 
-INSERT INTO dim_product_color (color_name)
-SELECT DISTINCT product_color
-FROM mock_data
-WHERE product_color <> ''
+-- color_group → color
+INSERT INTO dim_color_group (color_group_name)
+VALUES
+    ('Warm'),
+    ('Cool'),
+    ('Neutral')
+ON CONFLICT (color_group_name) DO NOTHING;
+
+INSERT INTO dim_product_color (color_name, color_group_id)
+SELECT DISTINCT
+    md.product_color,
+    cg.color_group_id
+FROM mock_data md
+JOIN dim_color_group cg
+  ON cg.color_group_name = CASE md.product_color
+      WHEN 'Red'        THEN 'Warm'
+      WHEN 'Crimson'    THEN 'Warm'
+      WHEN 'Orange'     THEN 'Warm'
+      WHEN 'Yellow'     THEN 'Warm'
+      WHEN 'Goldenrod'  THEN 'Warm'
+      WHEN 'Pink'       THEN 'Warm'
+      WHEN 'Fuscia'     THEN 'Warm'
+      WHEN 'Maroon'     THEN 'Warm'
+      WHEN 'Blue'       THEN 'Cool'
+      WHEN 'Green'      THEN 'Cool'
+      WHEN 'Teal'       THEN 'Cool'
+      WHEN 'Aquamarine' THEN 'Cool'
+      WHEN 'Turquoise'  THEN 'Cool'
+      WHEN 'Indigo'     THEN 'Cool'
+      WHEN 'Violet'     THEN 'Cool'
+      WHEN 'Purple'     THEN 'Cool'
+      WHEN 'Khaki'      THEN 'Neutral'
+      WHEN 'Puce'       THEN 'Neutral'
+      WHEN 'Mauv'       THEN 'Neutral'
+  END
+WHERE md.product_color <> ''
 ON CONFLICT (color_name) DO NOTHING;
 
-INSERT INTO dim_product_size (size_name)
-SELECT DISTINCT product_size
-FROM mock_data
-WHERE product_size <> ''
+-- size_category → size
+INSERT INTO dim_size_category (size_category_name)
+VALUES
+    ('Compact'),
+    ('Standard')
+ON CONFLICT (size_category_name) DO NOTHING;
+
+INSERT INTO dim_product_size (size_name, size_category_id)
+SELECT DISTINCT
+    md.product_size,
+    sc.size_category_id
+FROM mock_data md
+JOIN dim_size_category sc
+  ON sc.size_category_name = CASE md.product_size
+      WHEN 'Small'  THEN 'Compact'
+      WHEN 'Medium' THEN 'Standard'
+      WHEN 'Large'  THEN 'Standard'
+  END
+WHERE md.product_size <> ''
 ON CONFLICT (size_name) DO NOTHING;
+
+-- ============================================================
+-- CALENDAR HIERARCHY
+-- ============================================================
 
 WITH all_dates AS (
     SELECT TO_DATE(sale_date, 'MM/DD/YYYY') AS full_date FROM mock_data
@@ -224,6 +350,10 @@ FROM all_dates
 JOIN dim_month m
   ON m.month_nk = TO_CHAR(full_date, 'YYYY-MM')
 ON CONFLICT (date_id) DO NOTHING;
+
+-- ============================================================
+-- ENTITY DIMENSIONS
+-- ============================================================
 
 INSERT INTO dim_supplier (
     supplier_name,
@@ -384,6 +514,10 @@ JOIN dim_date ed
 JOIN dim_supplier s
   ON s.supplier_email = md.supplier_email
 ON CONFLICT (product_nk) DO NOTHING;
+
+-- ============================================================
+-- FACT TABLE
+-- ============================================================
 
 INSERT INTO fact_sales (
     mock_data_key,
