@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: bigdata-lr1
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # при инициализации
+      - ./import_ddl.sql:/docker-entrypoint-initdb.d/01-import_ddl.sql
+      - ./star_ddl.sql:/docker-entrypoint-initdb.d/02-star_ddl.sql
+      - ./import-full.sh:/docker-entrypoint-initdb.d/03-init-full.sh
+      - ./star_dml.sql:/star_dml.sql
+      # монтируем папку с CSV
+      - ./исходные данные:/csv_data:ro
+
+volumes:
+  postgres_data:
