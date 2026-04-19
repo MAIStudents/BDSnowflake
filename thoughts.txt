@@ -1,0 +1,86 @@
+Измерение: cutomer. Подизмерения:
+customer_first_name - измерение
+customer_last_name - измерение
+customer_age - измерение
+customer_email - измерение
+customer_location_id - доп измерение dim_location
+customer_pet_id - доп измерение dim_pet
+
+
+Измерение: seller. Подизмерениея:
+seller_first_name
+seller_last_name
+seller_email
+seller_location_id - доп измерение
+
+Измерение: product. Подизмерения:
+product_name
+category_id - доп измерение dim_category
+product_price
+product_quantity
+pet_category_id - доп измерение dim_pet_category
+product_weight
+product_color
+product_size
+brand_id - доп измерение
+product_material
+product_description
+product_rating
+product_reviews
+product_release_date_id - доп измерение dim_date
+product_expiry_date_id - доп измерение dim_date
+
+Факт: продажа
+sale_date_id - доп измерение dim_date
+sale_customer_id
+sale_seller_id
+sale_product_id
+sale_quantity
+sale_total_price
+
+Измерение: store. Подизмерения:
+store_name
+store_location_id - доп измерение dim_location
+store_phone
+store_email
+
+Измерение: supplier. Подизмерения:
+supplier_name
+supplier_contact
+supplier_email
+supplier_phone
+supplier_location_id - доп измерение dim_location
+
+Дополнительные измерения:
+dim_country:
+country - измерение
+
+dim_customer_pet:
+customer_pet_type - измерение
+customer_pet_name - измерение
+customer_pet_breed - измерение
+
+dim_category:
+category_name
+
+dim_pet_category:
+category_name
+
+dim_brand:
+brand_name
+
+dim_city:
+city
+state
+
+dim_location:
+city_id
+country_id
+postal_code
+address
+
+dim_date:
+full_date
+year
+month
+day_of_week
