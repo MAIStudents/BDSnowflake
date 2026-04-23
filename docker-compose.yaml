@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:13.3
@@ -14,6 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - "./исходные данные:/data"
       - ./init:/docker-entrypoint-initdb.d
+      - ./sql:/sql
 
 volumes:
   postgres_data:

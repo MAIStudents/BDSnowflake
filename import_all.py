@@ -5,8 +5,62 @@ import sys
 CONTAINER = "bdsnowflake-postgres-1"
 DB = "snowfleak"
 USER = "german"
-TABLE = "pet_sales"
+STAGING_TABLE = "stg_pet_sales"
 DATA_DIR = "./исходные данные"
+DDL_SQL = "/sql/01_ddl_snowflake.sql"
+TRANSFORM_SQL = "/sql/02_dml_snowflake.sql"
+COLUMN_LIST = """
+id,
+customer_first_name,
+customer_last_name,
+customer_age,
+customer_email,
+customer_country,
+customer_postal_code,
+customer_pet_type,
+customer_pet_name,
+customer_pet_breed,
+seller_first_name,
+seller_last_name,
+seller_email,
+seller_country,
+seller_postal_code,
+product_name,
+product_category,
+product_price,
+product_quantity,
+sale_date,
+sale_customer_id,
+sale_seller_id,
+sale_product_id,
+sale_quantity,
+sale_total_price,
+store_name,
+store_location,
+store_city,
+store_state,
+store_country,
+store_phone,
+store_email,
+pet_category,
+product_weight,
+product_color,
+product_size,
+product_brand,
+product_material,
+product_description,
+product_rating,
+product_reviews,
+product_release_date,
+product_expiry_date,
+supplier_name,
+supplier_contact,
+supplier_email,
+supplier_phone,
+supplier_address,
+supplier_city,
+supplier_country
+""".strip()
 
 
 def run_command(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -39,13 +93,24 @@ def main() -> None:
     for file_path in files:
         print(f"- {file_path}")
 
-    print(f"\nОчищаю таблицу {TABLE} ...")
+    print("\nПересоздаю DDL для staging и snowflake-схемы ...")
+    ddl_result = run_command([
+        "docker", "exec", CONTAINER,
+        "psql", "-v", "ON_ERROR_STOP=1",
+        "-U", USER,
+        "-d", DB,
+        "-f", DDL_SQL
+    ])
+    if ddl_result.stdout.strip():
+        print(ddl_result.stdout.strip())
+
+    print(f"\nОчищаю таблицу {STAGING_TABLE} ...")
     result = run_command([
         "docker", "exec", CONTAINER,
         "psql", "-v", "ON_ERROR_STOP=1",
         "-U", USER,
         "-d", DB,
-        "-c", f"TRUNCATE TABLE {TABLE};"
+        "-c", f"TRUNCATE TABLE {STAGING_TABLE} RESTART IDENTITY CASCADE;"
     ])
     if result.stdout.strip():
         print(result.stdout.strip())
@@ -63,7 +128,9 @@ def main() -> None:
 
         print(f"Загружаю: {host_file}")
         copy_sql = f"""
-COPY {TABLE}
+COPY {STAGING_TABLE} (
+{COLUMN_LIST}
+)
 FROM '{container_file}'
 WITH (
     FORMAT csv,
@@ -95,7 +162,7 @@ WITH (
                 "psql", "-t", "-A",
                 "-U", USER,
                 "-d", DB,
-                "-c", f"SELECT COUNT(*) FROM {TABLE};"
+                "-c", f"SELECT COUNT(*) FROM {STAGING_TABLE};"
             ],
             check=True,
             text=True,
@@ -112,7 +179,7 @@ WITH (
             "psql", "-t", "-A",
             "-U", USER,
             "-d", DB,
-            "-c", f"SELECT COUNT(*) FROM {TABLE};"
+            "-c", f"SELECT COUNT(*) FROM {STAGING_TABLE};"
         ],
         check=True,
         text=True,
@@ -121,8 +188,28 @@ WITH (
     )
 
     final_count = final_result.stdout.strip()
+    print("\nЗапускаю трансформацию в схему snowflake ...")
+    transform_result = run_command([
+        "docker", "exec", CONTAINER,
+        "psql", "-v", "ON_ERROR_STOP=1",
+        "-U", USER,
+        "-d", DB,
+        "-f", TRANSFORM_SQL
+    ])
+    if transform_result.stdout.strip():
+        print(transform_result.stdout.strip())
+
+    fact_count_result = run_command([
+        "docker", "exec", CONTAINER,
+        "psql", "-t", "-A",
+        "-U", USER,
+        "-d", DB,
+        "-c", "SELECT COUNT(*) FROM fact_sales;"
+    ])
+
     print("\nИмпорт завершён.")
-    print(f"Итоговое количество строк: {final_count}")
+    print(f"Итоговое количество строк в staging: {final_count}")
+    print(f"Итоговое количество строк в fact_sales: {fact_count_result.stdout.strip()}")
 
 
 if __name__ == "__main__":
