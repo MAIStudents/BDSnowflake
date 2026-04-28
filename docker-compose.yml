@@ -13,6 +13,10 @@ services:
       - "5430:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data/pgdata
+      # Монтируем скрипт инициализации. Он выполнится один раз при первом запуске.
+      - ./init-scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Монтируем папку с CSV-файлами (только для чтения). Предполагается, что CSV лежат в папке 'data'.
+      - ./data:/data:ro
     deploy:
       resources:
         limits:
