@@ -28,7 +28,7 @@ CREATE TABLE dim_seller (
 
 CREATE TABLE dim_product (
     product_id SERIAL PRIMARY KEY,
-    product_name VARCHAR(255) UNIQUE, 
+    product_name VARCHAR(255), 
     product_category VARCHAR(100),
     product_brand VARCHAR(100),
     product_material VARCHAR(100),

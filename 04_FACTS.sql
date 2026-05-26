@@ -15,6 +15,17 @@ LEFT JOIN dim_date dd ON m.sale_date = dd.date_value
 LEFT JOIN dim_customer dc ON m.customer_email = dc.customer_email
 LEFT JOIN dim_seller ds ON m.seller_email = ds.seller_email
 LEFT JOIN dim_product dp ON m.product_name = dp.product_name
+    AND m.product_category IS NOT DISTINCT FROM dp.product_category
+    AND m.product_brand IS NOT DISTINCT FROM dp.product_brand
+    AND m.product_material IS NOT DISTINCT FROM dp.product_material
+    AND m.product_color IS NOT DISTINCT FROM dp.product_color
+    AND m.product_size IS NOT DISTINCT FROM dp.product_size
+    AND m.product_weight IS NOT DISTINCT FROM dp.product_weight
+    AND m.product_description IS NOT DISTINCT FROM dp.product_description
+    AND m.product_rating IS NOT DISTINCT FROM dp.product_rating
+    AND m.product_reviews IS NOT DISTINCT FROM dp.product_reviews
+    AND m.product_release_date IS NOT DISTINCT FROM dp.product_release_date
+    AND m.product_expiry_date IS NOT DISTINCT FROM dp.product_expiry_date
 LEFT JOIN dim_store dst ON m.store_name = dst.store_name
 LEFT JOIN dim_supplier dsup ON m.supplier_name = dsup.supplier_name
 LEFT JOIN dim_pet dpet ON m.customer_pet_name = dpet.pet_name AND dc.customer_id = dpet.customer_id

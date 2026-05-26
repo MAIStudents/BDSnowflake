@@ -7,8 +7,8 @@ SELECT seller_email, MAX(seller_first_name), MAX(seller_last_name), MAX(seller_c
 FROM mock_data WHERE seller_email IS NOT NULL GROUP BY seller_email;
 
 INSERT INTO dim_product (product_name, product_category, product_brand, product_material, product_color, product_size, product_weight, product_description, product_rating, product_reviews, product_release_date, product_expiry_date)
-SELECT product_name, MAX(product_category), MAX(product_brand), MAX(product_material), MAX(product_color), MAX(product_size), MAX(product_weight), MAX(product_description), MAX(product_rating), MAX(product_reviews), MAX(product_release_date), MAX(product_expiry_date)
-FROM mock_data WHERE product_name IS NOT NULL GROUP BY product_name;
+SELECT DISTINCT product_name, product_category, product_brand, product_material, product_color, product_size, product_weight, product_description, product_rating, product_reviews, product_release_date, product_expiry_date
+FROM mock_data WHERE product_name IS NOT NULL;
 
 INSERT INTO dim_store (store_name, store_location, store_city, store_state, store_country, store_phone, store_email)
 SELECT store_name, MAX(store_location), MAX(store_city), MAX(store_state), MAX(store_country), MAX(store_phone), MAX(store_email)
