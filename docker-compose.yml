@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  snowflake_postgres:
+  postgres:
     image: postgres:15-alpine
     container_name: snowflake_postgres
     environment:
@@ -10,13 +10,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - snowflake_postgres_data:/var/lib/postgresql/snowflake_data
-      - ../исходные данные:/data/исходные данные:ro
+      - snowflake_postgres_data:/var/lib/postgresql/data
+      - ./исходные данные:/data/исходные данные:ro
+      - ./init-postgres:/docker-entrypoint-initdb.d
     networks:
       - highload_labs_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
