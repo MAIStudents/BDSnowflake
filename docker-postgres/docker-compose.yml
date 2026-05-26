@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  snowflake_postgres:
+    image: postgres:15-alpine
+    container_name: snowflake_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - snowflake_postgres_data:/var/lib/postgresql/snowflake_data
+      - ../исходные данные:/data/исходные данные:ro
+    networks:
+      - highload_labs_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  highload_labs_network:
+    driver: bridge
+
+volumes:
+  snowflake_postgres_data:
