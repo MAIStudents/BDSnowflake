@@ -1,5 +1,87 @@
 # BigDataSnowflake
-Анализ больших данных - лабораторная работа №1 - нормализация данных в снежинку
+
+Анализ больших данных - лабораторная работа №1 - нормализация данных в снежинку.
+
+Выполнил: Крючков Артемий Владимирович, группа М8О-205СВ-25.
+
+## Как запустить лабораторную работу
+
+Требуется установленный Docker.
+
+Из корня репозитория:
+
+```bash
+docker compose up -d
+```
+
+При первом старте автоматически выполняется:
+
+1. Поднимается PostgreSQL 17.
+2. Создаётся таблица `mock_data` и через `COPY` импортируются все 10 файлов `исходные данные/MOCK_DATA(*).csv` — 10000 строк.
+3. Выполняется DDL: таблица фактов `fact_sales` и 15 таблиц измерений (модель снежинка).
+4. Выполняется DML: измерения и факт заполняются из `mock_data`.
+
+Готовность можно проверить логами (должно быть `PostgreSQL init process complete. Ready for start up.`):
+
+```bash
+docker logs bdsnowflake_postgres
+```
+
+## Подключение (DBeaver)
+
+| Параметр | Значение    |
+| -------- | ----------- |
+| Host     | localhost   |
+| Port     | 5432        |
+| Database | bdsnowflake |
+| User     | postgres    |
+| Password | postgres    |
+
+## Проверка результата
+
+Контрольные значения:
+
+```sql
+SELECT count(*) FROM mock_data;
+SELECT count(*) FROM fact_sales;
+SELECT sum(total_price) FROM fact_sales;
+```
+
+Ожидается: 10000, 10000, 2529852.12.
+
+Пример запроса по модели (выручка по категории товара):
+
+```sql
+SELECT pc.name AS category, count(*) AS sales_cnt, sum(f.total_price) AS total_sum
+FROM fact_sales f
+JOIN dim_product p ON p.product_key = f.product_key
+JOIN dim_product_category pc ON pc.product_category_key = p.product_category_key
+GROUP BY pc.name
+ORDER BY sales_cnt DESC;
+```
+
+## Управление
+
+```bash
+docker compose stop
+docker compose down
+docker compose down -v && docker compose up -d
+```
+
+`down -v` удаляет данные и запускает полную переинициализацию с нуля.
+
+## Состав решения
+
+| Файл                    | Назначение                                    |
+| ----------------------- | --------------------------------------------- |
+| `docker-compose.yml`    | PostgreSQL 17 с автоматической инициализацией |
+| `init/01_mock_data.sql` | таблица-источник `mock_data` и импорт 10 CSV  |
+| `init/02_ddl.sql`       | DDL таблиц фактов и измерений (снежинка)      |
+| `init/03_dml.sql`       | DML заполнения из `mock_data`                 |
+
+---
+
+## Исходное задание
 
 Одна из задач data engineer при работе с данными BigData трансформировать исходную модель данных источника в аналитическую модель данных. Аналитическая модель данных позволяет исследовать данные и принимать на основе полученных данных решения. Классическими универсальными схемами для анализа данных являются "звезда" и "снежинка". В лабораторной работе вам предстоит потренироваться в трансформации исходных данных из источников в модель данных снежинка.
 
